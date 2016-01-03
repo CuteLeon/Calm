@@ -75,7 +75,8 @@ Public Class CloseButton
 
     Public Sub CloseApplication()
         If New TipsForm().ShowDialog(Me) = MsgBoxResult.Ok Then
-            MainForm.VLCPlayer.Stop()
+            MainForm.VLCMusicPlayer.Stop()
+            MainForm.VLCVideoPlayer.Stop()
             Application.Exit()
         End If
     End Sub

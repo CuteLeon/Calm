@@ -21,13 +21,13 @@ Public Class MainForm
     ''' </summary>
     Dim TabelRectangle As Rectangle
     ''' <summary>
-    ''' 视频文件
+    ''' VLC 视频播放器
     ''' </summary>
-    Dim VideoFile As FileInfo
+    Public VLCVideoPlayer As VlcControl = New VlcControl
     ''' <summary>
-    ''' VLC播放器
+    ''' VLC 音乐播放器
     ''' </summary>
-    Public VLCPlayer As VlcControl = New VlcControl
+    Public VLCMusicPlayer As VlcControl = New VlcControl
     ''' <summary>
     ''' 正在播放媒体
     ''' </summary>
@@ -48,8 +48,10 @@ Public Class MainForm
         TabelRectangle.Location = New Point((Me.Width - TabelRectangle.Width) / 2, 74 + (Me.Height - 134 - TabelRectangle.Height) / 2)
         AuthorLabel.Image = New Bitmap(My.Resources.UnityResource.AuthorLabel, AuthorLabel.Size)
 
-        VLCPlayer.VlcLibDirectory = New DirectoryInfo(Application.StartupPath)
-        VLCPlayer.EndInit()
+        VLCVideoPlayer.VlcLibDirectory = New DirectoryInfo(Application.StartupPath)
+        VLCVideoPlayer.EndInit()
+        VLCMusicPlayer.VlcLibDirectory = New DirectoryInfo(Application.StartupPath)
+        VLCMusicPlayer.EndInit()
     End Sub
 
     Private Sub MainForm_Activated(sender As Object, e As EventArgs) Handles Me.Activated
@@ -62,14 +64,16 @@ Public Class MainForm
         CloseButton.Location = New Point(Me.Width - CloseButton.Width - 10, 10)
 
         LoadResource()
-        With VLCPlayer
+
+        AddHandler VLCMusicPlayer.EndReached, AddressOf EndReached
+        With VLCVideoPlayer
             .Location = New Point(0, -My.Computer.Screen.Bounds.Height)
             .Size = My.Computer.Screen.Bounds.Size
             .Video.AspectRatio = String.Format("{0}:{1}", My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
             .Hide()
             AddHandler .EndReached, AddressOf EndReached
         End With
-        Me.Controls.Add(VLCPlayer)
+        Me.Controls.Add(VLCVideoPlayer)
     End Sub
 
     Private Sub MainForm_Paint(sender As Object, e As PaintEventArgs) Handles Me.Paint
@@ -121,58 +125,59 @@ Public Class MainForm
         GC.Collect()
     End Sub
 
-    Private Sub PlayMusic(ByVal MusicFile As String)
-        Dim ShortPath As String = Space(256)
-        Dim PathLength As Integer
-        PathLength = GetShortPathName(MusicFile, ShortPath, 256) - 2
-        ShortPath = Strings.Left(ShortPath, PathLength)
-        Dim Command As String = "Open """ & ShortPath & """  alias LeonMusic"
-        mciSendString(Command, Nothing, 0&, IntPtr.Zero)
-        mciSendString("Play LeonMusic Repeat", Nothing, 0, IntPtr.Zero)
-    End Sub
+    'Private Sub PlayMusic(ByVal MusicFile As String)
+    '    Dim ShortPath As String = Space(256)
+    '    Dim PathLength As Integer
+    '    PathLength = GetShortPathName(MusicFile, ShortPath, 256) - 2
+    '    ShortPath = Strings.Left(ShortPath, PathLength)
+    '    Dim Command As String = "Open """ & ShortPath & """  alias LeonMusic"
+    '    mciSendString(Command, Nothing, 0&, IntPtr.Zero)
+    '    mciSendString("Play LeonMusic Repeat", Nothing, 0, IntPtr.Zero)
+    'End Sub
 
-    Private Sub StopMusic()
-        mciSendString("Close LeonMusic", Nothing, 0, IntPtr.Zero)
-    End Sub
+    'Private Sub StopMusic()
+    '    mciSendString("Close LeonMusic", Nothing, 0, IntPtr.Zero)
+    'End Sub
 
     Private Sub PlayCalm(ByVal CalmDirectory As String)
         CalmPlaying = True
-        PlayMusic(CalmDirectory & "\Calm.mp3")
-        VideoFile = New FileInfo(CalmDirectory & "\Calm.mp4")
-        With VLCPlayer
+        VLCMusicPlayer.Tag = New FileInfo(CalmDirectory & "\Calm.mp3")
+        VLCMusicPlayer.Play(VLCMusicPlayer.Tag)
+        VLCVideoPlayer.Tag = New FileInfo(CalmDirectory & "\Calm.mp4")
+        With VLCVideoPlayer
             .Top = -My.Computer.Screen.Bounds.Height
             .Show()
             .BringToFront()
-            .Play(VideoFile)
+            .Play(VLCVideoPlayer.Tag)
         End With
         Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(
             Sub()
-                Do While VLCPlayer.Top < 0
-                    VLCPlayer.Top += 15
+                Do While VLCVideoPlayer.Top < 0
+                    VLCVideoPlayer.Top += 15
                     Threading.Thread.Sleep(5)
                 Loop
-                VLCPlayer.Top = 0
+                VLCVideoPlayer.Top = 0
             End Sub))
     End Sub
 
     Public Sub StopCalm()
         CalmPlaying = False
-        StopMusic()
+        VLCMusicPlayer.Stop()
         Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(
             Sub()
-                Do While VLCPlayer.Top < My.Computer.Screen.Bounds.Height
-                    VLCPlayer.Top += 15
+                Do While VLCVideoPlayer.Top < My.Computer.Screen.Bounds.Height
+                    VLCVideoPlayer.Top += 15
                     Threading.Thread.Sleep(5)
                 Loop
-                VLCPlayer.Stop()
-                VLCPlayer.Hide()
+                VLCVideoPlayer.Stop()
+                VLCVideoPlayer.Hide()
             End Sub))
     End Sub
 
-    Private Sub EndReached(sender As Object, e As VlcMediaPlayerEndReachedEventArgs)
+    Private Sub EndReached(sender As VlcControl, e As VlcMediaPlayerEndReachedEventArgs)
         Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(
             Sub()
-                VLCPlayer.Play(VideoFile)
+                VLCVideoPlayer.Play(sender.Tag)
             End Sub))
     End Sub
 
