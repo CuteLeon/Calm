@@ -105,7 +105,7 @@ Public Class MainForm
     End Sub
 
     Private Sub CloseButton_Click(sender As Object, e As EventArgs) Handles CloseButton.Click
-        Application.Exit()
+        If MsgBox("爽够了？开心了？", MsgBoxStyle.OkCancel Or MsgBoxStyle.Information) = MsgBoxResult.Ok Then Application.Exit()
     End Sub
 
     Private Sub AuthorLabel_Click(sender As Object, e As EventArgs) Handles AuthorLabel.Click
