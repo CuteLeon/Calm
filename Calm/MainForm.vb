@@ -2,6 +2,10 @@
 
 Public Class MainForm
     ''' <summary>
+    ''' 播放音频文件
+    ''' </summary>
+    Private Declare Function mciSendString Lib "winmm.dll" Alias "mciSendStringA" (ByVal lpstrCommand As String, ByVal lpstrRetumString As String, ByVal uReturnLength As String, ByVal hwndCallback As Integer) As Integer
+    ''' <summary>
     ''' 标签间边距
     ''' </summary>
     Dim PaddingSize As Integer = 10
