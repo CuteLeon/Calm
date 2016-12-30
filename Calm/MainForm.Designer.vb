@@ -55,7 +55,7 @@ Partial Class MainForm
         Me.AuthorLabel.BackColor = System.Drawing.Color.Transparent
         Me.AuthorLabel.Font = New System.Drawing.Font("微软雅黑", 18.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(134, Byte))
         Me.AuthorLabel.ForeColor = System.Drawing.Color.White
-        Me.AuthorLabel.Location = New System.Drawing.Point(68, 151)
+        Me.AuthorLabel.Location = New System.Drawing.Point(144, 149)
         Me.AuthorLabel.Name = "AuthorLabel"
         Me.AuthorLabel.Size = New System.Drawing.Size(307, 92)
         Me.AuthorLabel.TabIndex = 2

@@ -17,15 +17,16 @@ Public Class MainForm
 #Region "窗体事件"
 
     Private Sub MainForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        SetStyle(ControlStyles.UserPaint Or ControlStyles.AllPaintingInWmPaint Or ControlStyles.OptimizedDoubleBuffer Or ControlStyles.ResizeRedraw Or ControlStyles.SupportsTransparentBackColor, True)
+
         Me.Icon = My.Resources.UnityResource.Calm
         CloseButton.Location = New Point(Me.Width - CloseButton.Width - 10, 10)
         TitleLabel.Location = New Point(15, 10)
         Dim Zoom As Double = Math.Min((Me.Width * 0.9 - PaddingSize * (TabelSize.Width - 1)) / TabelSize.Width / 640,
-                                      (Me.Height - TitleLabel.Bottom - 60) * 0.9 - PaddingSize * (TabelSize.Height - 1) / TabelSize.Height / 220)
+                    (Me.Height - TitleLabel.Bottom - 60) * 0.9 - PaddingSize * (TabelSize.Height - 1) / TabelSize.Height / 220)
         AuthorLabel.Size = New Size(640 * Zoom, 220 * Zoom)
         TabelRectangle.Size = New Size(TabelSize.Width * (AuthorLabel.Width + PaddingSize) - PaddingSize, TabelSize.Height * (AuthorLabel.Height + PaddingSize) - PaddingSize)
         TabelRectangle.Location = New Point((Me.Width - TabelRectangle.Width) / 2, TitleLabel.Bottom + (Me.Height - TitleLabel.Bottom - 60 - TabelRectangle.Height) / 2)
-
         AuthorLabel.Image = New Bitmap(My.Resources.UnityResource.AuthorLabel, AuthorLabel.Size)
 
         GC.Collect()
