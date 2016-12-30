@@ -78,7 +78,7 @@ Public Class MainForm
                 .TextAlign = AuthorLabel.TextAlign
                 .ImageAlign = AuthorLabel.ImageAlign
                 .Text = New DirectoryInfo(CalmDirectory(Index)).Name
-                .Image = New Bitmap(Bitmap.FromFile(CalmDirectory(Index) & "\" & .Text & ".jpg"), .Size)
+                .Image = New Bitmap(Bitmap.FromFile(CalmDirectory(Index) & "\Calm.jpg"), .Size)
                 AddHandler .MouseEnter, AddressOf Label_MouseEnter
                 AddHandler .MouseDown, AddressOf Label_MouseDown
                 AddHandler .MouseLeave, AddressOf Label_MouseLeave
