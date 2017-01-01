@@ -1,10 +1,13 @@
-﻿Imports System.IO
+﻿Imports System.ComponentModel
+Imports System.IO
+Imports Vlc.DotNet
+Imports Vlc.DotNet.Core
+Imports Vlc.DotNet.Forms
 
 Public Class MainForm
-    ''' <summary>
-    ''' 播放音频文件
-    ''' </summary>
-    Private Declare Function mciSendString Lib "winmm.dll" Alias "mciSendStringA" (ByVal lpstrCommand As String, ByVal lpstrRetumString As String, ByVal uReturnLength As String, ByVal hwndCallback As Integer) As Integer
+    '播放音频相关
+    Private Declare Function GetShortPathName Lib "kernel32.dll" Alias "GetShortPathNameA" (ByVal lpszLongPath As String, ByVal shortFile As String, ByVal cchBuffer As Integer) As Integer
+    Private Declare Function mciSendString Lib "winmm.dll" Alias "mciSendStringA" (ByVal lpstrCommand As String, ByVal lpstrRetumString As String, ByVal uReturnLength As Integer, ByVal hwndCallback As Integer) As Integer
     ''' <summary>
     ''' 标签间边距
     ''' </summary>
@@ -17,23 +20,36 @@ Public Class MainForm
     ''' 放置标签的区域
     ''' </summary>
     Dim TabelRectangle As Rectangle
+    ''' <summary>
+    ''' 视频文件
+    ''' </summary>
+    Dim VideoFile As FileInfo
+    ''' <summary>
+    ''' VLC播放器
+    ''' </summary>
+    Public VLCPlayer As VlcControl = New VlcControl
+    ''' <summary>
+    ''' 正在播放媒体
+    ''' </summary>
+    Public CalmPlaying As Boolean
 
 #Region "窗体事件"
 
     Private Sub MainForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         SetStyle(ControlStyles.UserPaint Or ControlStyles.AllPaintingInWmPaint Or ControlStyles.OptimizedDoubleBuffer Or ControlStyles.ResizeRedraw Or ControlStyles.SupportsTransparentBackColor, True)
-
+        CheckForIllegalCrossThreadCalls = False
+        UpdateStyles()
         Me.Icon = My.Resources.UnityResource.Calm
-        CloseButton.Location = New Point(Me.Width - CloseButton.Width - 10, 10)
-        TitleLabel.Location = New Point(15, 10)
+        Me.Size = My.Computer.Screen.Bounds.Size
         Dim Zoom As Double = Math.Min((Me.Width * 0.9 - PaddingSize * (TabelSize.Width - 1)) / TabelSize.Width / 640,
-                    (Me.Height - TitleLabel.Bottom - 60) * 0.9 - PaddingSize * (TabelSize.Height - 1) / TabelSize.Height / 220)
+                    (Me.Height - 134) * 0.9 - PaddingSize * (TabelSize.Height - 1) / TabelSize.Height / 220)
         AuthorLabel.Size = New Size(640 * Zoom, 220 * Zoom)
         TabelRectangle.Size = New Size(TabelSize.Width * (AuthorLabel.Width + PaddingSize) - PaddingSize, TabelSize.Height * (AuthorLabel.Height + PaddingSize) - PaddingSize)
-        TabelRectangle.Location = New Point((Me.Width - TabelRectangle.Width) / 2, TitleLabel.Bottom + (Me.Height - TitleLabel.Bottom - 60 - TabelRectangle.Height) / 2)
+        TabelRectangle.Location = New Point((Me.Width - TabelRectangle.Width) / 2, 74 + (Me.Height - 134 - TabelRectangle.Height) / 2)
         AuthorLabel.Image = New Bitmap(My.Resources.UnityResource.AuthorLabel, AuthorLabel.Size)
 
-        GC.Collect()
+        VLCPlayer.VlcLibDirectory = New DirectoryInfo(Application.StartupPath)
+        VLCPlayer.EndInit()
     End Sub
 
     Private Sub MainForm_Activated(sender As Object, e As EventArgs) Handles Me.Activated
@@ -41,26 +57,49 @@ Public Class MainForm
     End Sub
 
     Private Sub MainForm_Shown(sender As Object, e As EventArgs) Handles Me.Shown
+        CloseButton.Show(Me)
+        CloseButton.Size = New Size(64, 64)
+        CloseButton.Location = New Point(Me.Width - CloseButton.Width - 10, 10)
+
         LoadResource()
+
+        With VLCPlayer
+            .Location = New Point(0, -My.Computer.Screen.Bounds.Height)
+            .Size = My.Computer.Screen.Bounds.Size
+            .Video.AspectRatio = String.Format("{0}:{1}", My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
+            .Hide()
+            AddHandler .EndReached, AddressOf EndReached
+        End With
+        Me.Controls.Add(VLCPlayer)
+    End Sub
+
+    Private Sub MainForm_Paint(sender As Object, e As PaintEventArgs) Handles Me.Paint
+        e.Graphics.FillRectangle(New SolidBrush(Color.FromArgb(50, Color.White)), New Rectangle(TabelRectangle.Left - 20, TabelRectangle.Top - 20, TabelRectangle.Width + 40, TabelRectangle.Height + 40))
+        e.Graphics.DrawImage(My.Resources.UnityResource.Favicon, 15, 10, 298, 64)
+    End Sub
+
+    Private Sub MainForm_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
+        e.Cancel = True
+        CloseButton.CloseApplication()
     End Sub
 
 #End Region
 
 #Region "按钮动态效果"
 
-    Private Sub Button_MouseDown(sender As Label, e As MouseEventArgs) Handles CloseButton.MouseDown
+    Private Sub Button_MouseDown(sender As Label, e As MouseEventArgs)
         sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_2")
     End Sub
 
-    Private Sub Button_MouseEnter(sender As Label, e As EventArgs) Handles CloseButton.MouseEnter
+    Private Sub Button_MouseEnter(sender As Label, e As EventArgs)
         sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_1")
     End Sub
 
-    Private Sub Button_MouseLeave(sender As Label, e As EventArgs) Handles CloseButton.MouseLeave
+    Private Sub Button_MouseLeave(sender As Label, e As EventArgs)
         sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_0")
     End Sub
 
-    Private Sub Button_MouseUp(sender As Label, e As MouseEventArgs) Handles CloseButton.MouseUp
+    Private Sub Button_MouseUp(sender As Label, e As MouseEventArgs)
         sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_1")
     End Sub
 #End Region
@@ -84,9 +123,10 @@ Public Class MainForm
                 .ImageAlign = AuthorLabel.ImageAlign
                 .Text = New DirectoryInfo(CalmDirectory(Index)).Name
                 .Image = New Bitmap(Bitmap.FromFile(CalmDirectory(Index) & "\Calm.jpg"), .Size)
+                AddHandler .Click, AddressOf Label_Click
                 AddHandler .MouseEnter, AddressOf Label_MouseEnter
-                AddHandler .MouseDown, AddressOf Label_MouseDown
                 AddHandler .MouseLeave, AddressOf Label_MouseLeave
+                AddHandler .MouseDown, AddressOf Label_MouseDown
                 .Show()
             End With
             Me.Controls.Add(CalmLabel)
@@ -98,38 +138,90 @@ Public Class MainForm
             End If
         Next
         AuthorLabel.Location = New Point(X, Y)
+        GC.Collect()
+    End Sub
+
+    Private Sub PlayMusic(ByVal MusicFile As String)
+        Dim ShortPath As String = Space(256)
+        Dim PathLength As Integer
+        PathLength = GetShortPathName(MusicFile, ShortPath, 256) - 2
+        ShortPath = Strings.Left(ShortPath, PathLength)
+        Dim Command As String = "Open """ & ShortPath & """  alias LeonMusic"
+        mciSendString(Command, Nothing, 0&, IntPtr.Zero)
+        mciSendString("Play LeonMusic Repeat", Nothing, 0, IntPtr.Zero)
+    End Sub
+
+    Private Sub StopMusic()
+        mciSendString("Close LeonMusic", Nothing, 0, IntPtr.Zero)
+    End Sub
+
+    Private Sub PlayCalm(ByVal CalmDirectory As String)
+        CalmPlaying = True
+        PlayMusic(CalmDirectory & "\Calm.mp3")
+        VideoFile = New FileInfo(CalmDirectory & "\Calm.mp4")
+        With VLCPlayer
+            .Top = -My.Computer.Screen.Bounds.Height
+            .Show()
+            .BringToFront()
+            .Play(VideoFile)
+        End With
+        Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(
+            Sub()
+                Do While VLCPlayer.Top < 0
+                    VLCPlayer.Top += 15
+                    Threading.Thread.Sleep(5)
+                Loop
+                VLCPlayer.Top = 0
+            End Sub))
+    End Sub
+
+    Public Sub StopCalm()
+        CalmPlaying = False
+        StopMusic()
+        Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(
+            Sub()
+                Do While VLCPlayer.Top < My.Computer.Screen.Bounds.Height
+                    VLCPlayer.Top += 15
+                    Threading.Thread.Sleep(5)
+                Loop
+                VLCPlayer.Stop()
+                VLCPlayer.Hide()
+            End Sub))
+    End Sub
+
+    Private Sub EndReached(sender As Object, e As VlcMediaPlayerEndReachedEventArgs)
+        Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(
+            Sub()
+                VLCPlayer.Play(VideoFile)
+            End Sub))
     End Sub
 
 #End Region
 
 #Region "控件事件"
 
-    Private Sub TitleLabel_MouseEnter(sender As Object, e As EventArgs) Handles TitleLabel.MouseEnter
-        Me.BackgroundImage = My.Resources.UnityResource.HomePage
-    End Sub
-
-    Private Sub CloseButton_Click(sender As Object, e As EventArgs) Handles CloseButton.Click
-        If MsgBox("爽够了？开心了？", MsgBoxStyle.OkCancel Or MsgBoxStyle.Information) = MsgBoxResult.Ok Then Application.Exit()
-    End Sub
-
     Private Sub AuthorLabel_Click(sender As Object, e As EventArgs) Handles AuthorLabel.Click
-        MsgBox("TODO:此处提倡装逼...")
+        AuthorForm.SwitchVisible(AuthorForm.Visible)
     End Sub
 
 #End Region
 
 #Region "标签事件"
 
-    Private Sub Label_MouseEnter(sender As Label, e As EventArgs) Handles AuthorLabel.MouseEnter
+    Private Sub Label_Click(sender As Label, e As EventArgs)
+        PlayCalm(sender.Tag)
+        GC.Collect()
+    End Sub
+
+    Private Sub Label_MouseEnter(sender As Label, e As EventArgs)
         sender.BorderStyle = BorderStyle.FixedSingle
-        Me.BackgroundImage = New Bitmap(sender.Image)
+        Me.BackgroundImage = Bitmap.FromFile(sender.Tag & "\Calm.jpg")
         GC.Collect()
     End Sub
 
     Private Sub Label_MouseDown(sender As Label, e As MouseEventArgs) Handles AuthorLabel.MouseDown
         sender.Location = New Point(sender.Location.X + 2, sender.Location.Y + 2)
         Me.Refresh()
-        '
         sender.Location = New Point(sender.Location.X - 2, sender.Location.Y - 2)
     End Sub
 
