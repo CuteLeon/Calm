@@ -62,7 +62,6 @@ Public Class MainForm
         CloseButton.Location = New Point(Me.Width - CloseButton.Width - 10, 10)
 
         LoadResource()
-
         With VLCPlayer
             .Location = New Point(0, -My.Computer.Screen.Bounds.Height)
             .Size = My.Computer.Screen.Bounds.Size
