@@ -28,7 +28,7 @@ Partial Class AuthorForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(400, 480)
+        Me.ClientSize = New System.Drawing.Size(650, 480)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None
         Me.Name = "AuthorForm"
         Me.Text = "Leon"
