@@ -31,7 +31,9 @@ Namespace My
                     Process.Start("https://github.com/CuteLeon/Calm/tree/master/Calm/plugins")
                 End If
             End If
-            If HasFileInNeed Then End
+            If HasFileInNeed Then
+                End
+            End If
         End Sub
     End Class
 End Namespace
