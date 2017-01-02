@@ -84,25 +84,6 @@ Public Class MainForm
 
 #End Region
 
-#Region "按钮动态效果"
-
-    Private Sub Button_MouseDown(sender As Label, e As MouseEventArgs)
-        sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_2")
-    End Sub
-
-    Private Sub Button_MouseEnter(sender As Label, e As EventArgs)
-        sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_1")
-    End Sub
-
-    Private Sub Button_MouseLeave(sender As Label, e As EventArgs)
-        sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_0")
-    End Sub
-
-    Private Sub Button_MouseUp(sender As Label, e As MouseEventArgs)
-        sender.Image = My.Resources.UnityResource.ResourceManager.GetObject(sender.Tag & "_1")
-    End Sub
-#End Region
-
 #Region "功能函数"
 
     Private Sub LoadResource()
